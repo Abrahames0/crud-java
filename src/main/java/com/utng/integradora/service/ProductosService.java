@@ -9,5 +9,8 @@ public interface ProductosService {
     List<Productos> listaTienda(String nombre);
     ProductosDTO crearProducto(String nombre, Double precio, Integer existencia);
     ProductosDTO actualizarProducto(Long id, ProductosDTO productosDTO);
+    ProductosDTO actualizarProductoPorNombre(String nombre, ProductosDTO productosDTO);
     void eliminarProducto(Long id);
+    boolean existeProductoPorNombre(String nombre);
 }
+

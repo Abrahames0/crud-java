@@ -1,6 +1,7 @@
 package com.utng.integradora.service.Impl;
 
 import com.utng.integradora.entity.Productos;
+import com.utng.integradora.exception;
 import com.utng.integradora.model.ProductosDTO;
 import com.utng.integradora.repository.ProductosRepository;
 import com.utng.integradora.service.ProductosService;
@@ -42,6 +43,12 @@ public class ProductosServiceImpl implements ProductosService {
     }
 
     @Override
+    public boolean existeProductoPorNombre(String nombre) {
+        return productosApiRepository.findByNombre(nombre).isPresent();
+    }
+
+
+    @Override
     public ProductosDTO actualizarProducto(Long id, ProductosDTO productosDTO) {
         Optional<Productos> optionalProducto = productosApiRepository.findById(id);
         if (optionalProducto.isEmpty()) {
@@ -50,11 +57,40 @@ public class ProductosServiceImpl implements ProductosService {
 
         Productos productoExistente = optionalProducto.get();
 
-        if (productosDTO.getNombre() == null) {
-            throw new IllegalArgumentException("El nombre no puede ser nulo");
+        if (productosDTO.getNombre() != null && !productosDTO.getNombre().equals(productoExistente.getNombre())) {
+            Optional<Productos> productoConMismoNombre = productosApiRepository.findByNombre(productosDTO.getNombre());
+            if (productoConMismoNombre.isPresent()) {
+                throw new exception.ProductoDuplicadoException("Ya existe un producto con el nombre " + productosDTO.getNombre());
+            }
         }
 
         BeanUtils.copyProperties(productosDTO, productoExistente, "id");
+        Productos productoActualizado = productosApiRepository.save(productoExistente);
+
+        ProductosDTO updatedDTO = new ProductosDTO();
+        BeanUtils.copyProperties(productoActualizado, updatedDTO);
+
+        return updatedDTO;
+    }
+
+    @Override
+    public ProductosDTO actualizarProductoPorNombre(String nombre, ProductosDTO productosDTO) {
+        Optional<Productos> optionalProducto = productosApiRepository.findByNombre(nombre);
+        if (optionalProducto.isEmpty()) {
+            throw new RuntimeException("Producto no encontrado con nombre " + nombre);
+        }
+
+        Productos productoExistente = optionalProducto.get();
+
+        // Verificación de nombre duplicado
+        if (productosDTO.getNombre() != null && !productosDTO.getNombre().equals(nombre)) {
+            Optional<Productos> productoConMismoNombre = productosApiRepository.findByNombre(productosDTO.getNombre());
+            if (productoConMismoNombre.isPresent()) {
+                throw new RuntimeException("Ya existe un producto con el nombre " + productosDTO.getNombre());
+            }
+        }
+
+        BeanUtils.copyProperties(productosDTO, productoExistente, "id", "nombre");
         Productos productoActualizado = productosApiRepository.save(productoExistente);
 
         ProductosDTO updatedDTO = new ProductosDTO();
