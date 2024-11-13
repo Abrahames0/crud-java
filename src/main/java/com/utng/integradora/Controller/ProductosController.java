@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(value = "/API/v1/CORREO/productosController")
@@ -39,19 +40,26 @@ public class ProductosController {
     }
 
     // CONSULTAR
-    @PostMapping(value = "consultarProductos")
-    public ResponseEntity<?> consultarProductos(@RequestBody ProductosDTO productosDTO) {
-        if (productosDTO.getNombre() == null || productosDTO.getNombre().isEmpty()) {
+    @GetMapping(value = "consultarProductos")
+    public ResponseEntity<?> consultarProductos(@RequestParam(required = false) String nombre) {
+        if (nombre == null || nombre.isEmpty()) {
             return new ResponseEntity<>("El nombre del producto no puede estar vacío", HttpStatus.BAD_REQUEST);
         }
 
-        List<ProductosDTO> productosDTOList = new ArrayList<>();
-        List<Productos> listaTienda = productosService.listaTienda(productosDTO.getNombre());
+        List<Productos> listaTienda = productosService.listaTienda(nombre);
 
-        for (Productos tiendita : listaTienda) {
-            ProductosDTO productito = new ProductosDTO();
-            BeanUtils.copyProperties(tiendita, productito);
-            productosDTOList.add(productito);
+        // Filtrar solo los productos que coinciden exactamente con el nombre proporcionado
+        List<ProductosDTO> productosDTOList = listaTienda.stream()
+                .filter(tiendita -> tiendita.getNombre().equalsIgnoreCase(nombre))
+                .map(tiendita -> {
+                    ProductosDTO productito = new ProductosDTO();
+                    BeanUtils.copyProperties(tiendita, productito);
+                    return productito;
+                })
+                .collect(Collectors.toList());
+
+        if (productosDTOList.isEmpty()) {
+            return new ResponseEntity<>("Producto no encontrado", HttpStatus.NOT_FOUND);
         }
 
         return new ResponseEntity<>(productosDTOList, HttpStatus.OK);
@@ -65,6 +73,14 @@ public class ProductosController {
 
         if (nombre == null || nombre.isEmpty()) {
             return new ResponseEntity<>("El nombre del producto no puede estar vacío", HttpStatus.BAD_REQUEST);
+        }
+
+        if (precioStr == null || precioStr.isEmpty()) {
+            return new ResponseEntity<>("El precio del producto no puede estar vacío", HttpStatus.BAD_REQUEST);
+        }
+
+        if (existenciaStr == null || existenciaStr.isEmpty()) {
+            return new ResponseEntity<>("La existencia del producto no puede estar vacío", HttpStatus.BAD_REQUEST);
         }
 
         if (productosService.existeProductoPorNombre(nombre)) {
@@ -145,11 +161,15 @@ public class ProductosController {
 
         log.info("ProductosDTO recibido para actualización por nombre: {}", productosDTO);
 
-        if (productosDTO.getPrecio() == null || productosDTO.getPrecio() <= 0) {
+        if (productosDTO.getNombre() == null || productosDTO.getNombre().isEmpty()) {
+            return new ResponseEntity<>("El nombre del producto no puede estar vacío", HttpStatus.BAD_REQUEST);
+        }
+
+        if (productosDTO.getPrecio() == null || productosDTO.getPrecio() < 0 || productosDTO.getPrecio() == 0) {
             return new ResponseEntity<>("El precio debe ser un valor positivo", HttpStatus.BAD_REQUEST);
         }
 
-        if (productosDTO.getExistencia() == null || productosDTO.getExistencia() < 0) {
+        if (productosDTO.getExistencia() == null || productosDTO.getExistencia() < 0 || productosDTO.getExistencia() == 0) {
             return new ResponseEntity<>("La existencia debe ser un número no negativo", HttpStatus.BAD_REQUEST);
         }
 
