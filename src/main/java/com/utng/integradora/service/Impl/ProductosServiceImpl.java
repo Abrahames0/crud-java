@@ -26,6 +26,11 @@ public class ProductosServiceImpl implements ProductosService {
     }
 
     @Override
+    public List<Productos> listaTodaTienda() {
+        return productosApiRepository.findAll();
+    }
+
+    @Override
     public ProductosDTO crearProducto(String nombre, Double precio, Integer existencia) {
         try {
             ProductosDTO productosConsultaDTO1 = new ProductosDTO();
@@ -46,7 +51,6 @@ public class ProductosServiceImpl implements ProductosService {
     public boolean existeProductoPorNombre(String nombre) {
         return productosApiRepository.findByNombre(nombre).isPresent();
     }
-
 
     @Override
     public ProductosDTO actualizarProducto(Long id, ProductosDTO productosDTO) {

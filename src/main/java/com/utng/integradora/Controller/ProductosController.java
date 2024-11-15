@@ -39,6 +39,26 @@ public class ProductosController {
         return true;
     }
 
+    // CONSULTAR TODOS LOS PRODUCTOS
+    @GetMapping(value = "listarTodaTienda")
+    public ResponseEntity<?> listarTodaTienda() {
+        List<Productos> listaTienda = productosService.listaTodaTienda();
+
+        if (listaTienda.isEmpty()) {
+            return new ResponseEntity<>("No hay productos disponibles", HttpStatus.NOT_FOUND);
+        }
+
+        List<ProductosDTO> productosDTOList = listaTienda.stream()
+                .map(tiendita -> {
+                    ProductosDTO productito = new ProductosDTO();
+                    BeanUtils.copyProperties(tiendita, productito);
+                    return productito;
+                })
+                .collect(Collectors.toList());
+
+        return new ResponseEntity<>(productosDTOList, HttpStatus.OK);
+    }
+
     // CONSULTAR
     @GetMapping(value = "consultarProductos")
     public ResponseEntity<?> consultarProductos(@RequestParam(required = false) String nombre) {
@@ -48,7 +68,6 @@ public class ProductosController {
 
         List<Productos> listaTienda = productosService.listaTienda(nombre);
 
-        // Filtrar solo los productos que coinciden exactamente con el nombre proporcionado
         List<ProductosDTO> productosDTOList = listaTienda.stream()
                 .filter(tiendita -> tiendita.getNombre().equalsIgnoreCase(nombre))
                 .map(tiendita -> {
